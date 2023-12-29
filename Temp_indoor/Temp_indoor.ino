@@ -11,6 +11,9 @@ SimpleDHT11 dht11(pinDHT11);
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
+// Declaration Const --> Bouton
+int buttonpin = 2;
+
 void setup() {
   Serial.begin(115200);
 
@@ -18,6 +21,9 @@ void setup() {
   lcd.begin(16, 2);
   // Print a message to the LCD.
   //lcd.print("Hello, World!");
+  //lcd.noDisplay();
+
+  pinMode(buttonpin, INPUT_PULLUP);  
 }
 
 void loop() {
@@ -38,23 +44,35 @@ void loop() {
   Serial.print("Sample OK: ");
   Serial.print((int)temperature); Serial.print(" *C, "); 
   Serial.print((int)humidity); Serial.println(" H");
+
+  Serial.println(digitalRead(buttonpin));
   
+  if (digitalRead(buttonpin) == LOW)
+  {
+    
+    Serial.println(digitalRead(buttonpin));
+  
+    //lcd.display();
+    // set the cursor to column 0, line 1
+    // (note: line 1 is the second row, since counting begins with 0):
+    lcd.setCursor(0, 0);
+    // print the number of seconds since reset:
+    //lcd.print(millis() / 1000);
+    lcd.print("Temperature = ");
+    lcd.print(temperature);
+    lcd.setCursor(1,1);
+    lcd.print("Humidity ");
+    lcd.setCursor(12,1);
+    lcd.print("=");
+    lcd.setCursor(14,1);
+    lcd.print(humidity);
 
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
-  lcd.setCursor(0, 0);
-  // print the number of seconds since reset:
-  //lcd.print(millis() / 1000);
-  lcd.print("Temperature = ");
-  lcd.print(temperature);
-  lcd.setCursor(1,1);
-  lcd.print("Humidity ");
-  lcd.setCursor(12,1);
-  lcd.print("=");
-  lcd.setCursor(14,1);
-  lcd.print(humidity);
-
-  //lcd.clear();
+    //lcd.clear();
+  }
+  else {
+    lcd.clear();
+    //lcd.noDisplay();
+  }
 
   // DHT11 sampling rate is 1HZ.
   delay(10000);
