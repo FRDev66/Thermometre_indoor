@@ -14,6 +14,10 @@ LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 // Declaration Const --> Bouton
 int buttonpin = 2;
 
+// Declaration variables
+unsigned long time;
+
+
 void setup() {
   Serial.begin(115200);
 
@@ -23,36 +27,40 @@ void setup() {
   //lcd.print("Hello, World!");
   //lcd.noDisplay();
 
-  pinMode(buttonpin, INPUT_PULLUP);  
+  pinMode(buttonpin, INPUT_PULLUP); 
+
+  pinMode(6,OUTPUT);
 }
 
 void loop() {
-  // start working...
-  Serial.println("=================================");
-  Serial.println("Sample DHT11...");
   
-  // read without samples.
-  byte temperature = 0;
-  byte humidity = 0;
-  int err = SimpleDHTErrSuccess;
-  if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
-    Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
-    Serial.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
-    return;
-  }
+  if(millis()-time >= 10000){
+    // start working...
+    Serial.println("=================================");
+    Serial.println("Sample DHT11...");
+    
+    // read without samples.
+    byte temperature = 0;
+    byte humidity = 0;
+    int err = SimpleDHTErrSuccess;
+    if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
+      Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
+      Serial.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
+      return;
+    }
+    
+    Serial.print("Sample OK: ");
+    Serial.print((int)temperature); Serial.print(" *C, "); 
+    Serial.print((int)humidity); Serial.println(" H");
   
-  Serial.print("Sample OK: ");
-  Serial.print((int)temperature); Serial.print(" *C, "); 
-  Serial.print((int)humidity); Serial.println(" H");
 
   Serial.println(digitalRead(buttonpin));
   
   if (digitalRead(buttonpin) == LOW)
   {
-    
     Serial.println(digitalRead(buttonpin));
-  
-    //lcd.display();
+    digitalWrite(6, HIGH); 
+    lcd.display();
     // set the cursor to column 0, line 1
     // (note: line 1 is the second row, since counting begins with 0):
     lcd.setCursor(0, 0);
@@ -66,17 +74,18 @@ void loop() {
     lcd.print("=");
     lcd.setCursor(14,1);
     lcd.print(humidity);
-
-    //lcd.clear();
   }
   else {
-    lcd.clear();
-    //lcd.noDisplay();
+    //lcd.clear();
+    lcd.noDisplay();
+    digitalWrite(6, LOW); 
   }
-
+  
+  time = millis();
   // DHT11 sampling rate is 1HZ.
-  delay(10000);
-
+  //delay(10000);
+  }
   
 }
+
 
