@@ -27,13 +27,16 @@ void setup() {
   //lcd.print("Hello, World!");
   //lcd.noDisplay();
 
+  // initialisation bouton = input
   pinMode(buttonpin, INPUT_PULLUP); 
 
+  // initialisation alimentation retro-eclairage LCD sur la PIN 6
   pinMode(6,OUTPUT);
 }
 
 void loop() {
   
+  // Prise de Mesure - TOUTES LES 10 secondes
   if(millis()-time >= 10000){
     // start working...
     Serial.println("=================================");
@@ -49,18 +52,19 @@ void loop() {
       return;
     }
     
+    // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
     Serial.print((int)temperature); Serial.print(" *C, "); 
     Serial.print((int)humidity); Serial.println(" H");
   
 
-  Serial.println(digitalRead(buttonpin));
+  //Serial.println(digitalRead(buttonpin));
   
   if (digitalRead(buttonpin) == LOW)
   {
-    Serial.println(digitalRead(buttonpin));
-    digitalWrite(6, HIGH); 
-    lcd.display();
+    Serial.println(digitalRead(buttonpin)); // Affichage du Statut Bouton sur le Serial
+    digitalWrite(6, HIGH); // Allumage Retro-Eclairage LCD
+    lcd.display(); // Activation Display LCD
     // set the cursor to column 0, line 1
     // (note: line 1 is the second row, since counting begins with 0):
     lcd.setCursor(0, 0);
@@ -77,8 +81,8 @@ void loop() {
   }
   else {
     //lcd.clear();
-    lcd.noDisplay();
-    digitalWrite(6, LOW); 
+    lcd.noDisplay(); // Desactivation Display LCD
+    digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
   }
   
   time = millis();
