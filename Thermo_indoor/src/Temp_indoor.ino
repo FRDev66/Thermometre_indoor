@@ -48,6 +48,9 @@ int buttonpin = 2;
 // Declaration variables
 unsigned long tempoMesure = 0;
 
+// Déclaration constantes
+int TypeApp = 2; // déclaration du type Appareil (2) --> utilisé dans les requête d'insertion en Base pour distinction de chaque Module
+
 // FIN SECTION DECLARATION - CONSTANTE
 
 // EXEMPLE REQUETE SQL
@@ -117,15 +120,20 @@ void loop() {
     byte humidity = 0;
     int err = SimpleDHTErrSuccess;
     if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
-      Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
-      Serial.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
+      Serial.print("Read DHT11 failed, err="); 
+      Serial.print(SimpleDHTErrCode(err));
+      Serial.print(","); 
+      Serial.println(SimpleDHTErrDuration(err)); 
+      delay(1000);
       return;
     }
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
-    Serial.print((int)temperature); Serial.print(" *C, "); 
-    Serial.print((int)humidity); Serial.println(" H");
+    Serial.print((int)temperature); 
+    Serial.print(" *C, "); 
+    Serial.print((int)humidity); 
+    Serial.println(" H");
   
 
     //Serial.println(digitalRead(buttonpin));
