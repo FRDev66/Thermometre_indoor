@@ -36,16 +36,27 @@ SimpleDHT11 dht11(pinDHT11);
 // FIN SECTION DECLARATION - MESURES
 
 // DEBUT SECTION DECLARATION - ECRAN LCD
+
+// définition des broches auxquelles on a branché l'afficheur LCD
+/*
+const int pinRS = 4;      // broche 4 (RS) de l'afficheur branchée à GPIO04 de l'ESP8266
+const int pinEnable = 5;  // broche 6 (Enable) de l'afficheur branchée à GPIO05 de l'ESP8266
+const int pinD4 = 12;  // broche 11 (D4) de l'afficheur branchée à GPIO12 de l'ESP8266
+const int pinD5 = 13;  // broche 12 (D5) de l'afficheur branchée à GPIO13 de l'ESP8266
+const int pinD6 = 14;  // broche 13 (D6) de l'afficheur branchée à GPIO14 de l'ESP8266
+const int pinD7 = 15;  // broche 14 (D7) de l'afficheur branchée à GPIO15 de l'ESP8266
+
 // initialize the library with the numbers of the interface pins
 //LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
-LiquidCrystal lcd(6, 5, 4, 3, 2, 1);
-
+//LiquidCrystal lcd(6, 5, 4, 3, 2, 1);
+LiquidCrystal lcd(pinRS, pinEnable, pinD4, pinD5, pinD6, pinD7);
+*/
 // FIN SECTION DECLARATION - ECRAN LCD 
 
 // DEBUT SECTION DECLARATION - CONSTANTE
 // Declaration Const --> Bouton
 //int buttonpin = 2;
-int buttonpin = D8;
+//int buttonpin = D8;
 
 // Declaration variables
 unsigned long tempoMesure = 0;
@@ -54,11 +65,6 @@ unsigned long tempoMesure = 0;
 int TypeApp = 2; // déclaration du type Appareil (2) --> utilisé dans les requête d'insertion en Base pour distinction de chaque Module
 
 // FIN SECTION DECLARATION - CONSTANTE
-
-// EXEMPLE REQUETE SQL
-// Sample query
-char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
-
 
 void setup() {
   Serial.begin(115200);
@@ -97,22 +103,23 @@ void setup() {
   // FIN SECTION SETUP - CONNEXION
 
   // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
+  //lcd.begin(16, 2);
+  
   // Print a message to the LCD.
   //lcd.print("Hello, World!");
   //lcd.noDisplay();
 
   // initialisation bouton = input
-  pinMode(buttonpin, INPUT_PULLUP); 
+  //pinMode(buttonpin, INPUT_PULLUP); 
 
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
-  pinMode(6,OUTPUT);
+  //pinMode(7,OUTPUT);
 }
 
 void loop() {
   
   // Prise de Mesure - TOUTES LES 10 secondes
-  if((millis() - tempoMesure) >= 10000){
+  if((millis() - tempoMesure) >= 30000){
     // start working...
     Serial.println("=================================");
     Serial.println("Sample DHT11...");
@@ -140,6 +147,7 @@ void loop() {
 
     //Serial.println(digitalRead(buttonpin));
     
+    /*
     if (digitalRead(buttonpin) == LOW)
     {
       Serial.println(digitalRead(buttonpin)); // Affichage du Statut Bouton sur le Serial
@@ -164,16 +172,43 @@ void loop() {
       lcd.noDisplay(); // Desactivation Display LCD
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
+    */
 
-    if (conn.connected())
-      cursor->execute(INSERT_SQL);
-  
+    if (conn.connected()) {
+     //cursor->execute(INSERT_SQL);
+      insertTemperature(temperature); // Appel de la fonction d'insert Mesure Température en Base
+      insertHumidity(humidity); // Appel de la fonction d'insert Mesure Humidité en Base
+    }
 
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
   }
   
+}
+
+// Déclaration de la fonction d'insert Mesure Température en Base
+void insertTemperature(int temperature) {
+  String insertvaluestemperature = "INSERT INTO station_meteo.st_mes_temperature (id_mesure_temp, date_mesure, mesure, it_app_module) VALUES (NULL, current_timestamp()," + String(temperature) +"," + String(TypeApp) + ");";
+  int str_len_temp = insertvaluestemperature.length() + 1; // calcul de la taille du buffer du tableau Query
+  char query_temp[str_len_temp]; // Déclaration du Tableau Query 
+  insertvaluestemperature.toCharArray(query_temp,str_len_temp); // Transformation Requête String --> Char
+  Serial.println(insertvaluestemperature);
+  cursor->execute(query_temp); // Exécution de la Requête SQL
+  Serial.println("Insertion OK");
+  //delete cursor;
+}
+
+// Déclaration de la fonction d'insert Mesure Humidité en Base
+void insertHumidity(int humidity) {
+  String insertvalueshumidite = "INSERT INTO station_meteo.st_mes_humidite (id_mesure_hum, date_mesure, mesure, it_app_module) VALUES (NULL, current_timestamp()," + String(humidity) +"," + String(TypeApp) + ");";
+  int str_len_hum = insertvalueshumidite.length() + 1; // calcul de la taille du buffer du tableau Query
+  char query_hum[str_len_hum]; // Déclaration du Tableau Query 
+  insertvalueshumidite.toCharArray(query_hum,str_len_hum); // Transformation Requête String --> Char
+  Serial.println(insertvalueshumidite);
+  cursor->execute(query_hum); // Exécution de la Requête SQL
+  Serial.println("Insertion OK");
+  //delete cursor;
 }
 
 
