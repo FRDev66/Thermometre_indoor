@@ -30,20 +30,22 @@ MySQL_Cursor* cursor;
 //      VCC: 5V or 3V
 //      GND: GND
 //      DATA: 2
-int pinDHT11 = 13;
+int pinDHT11 = D0;
 SimpleDHT11 dht11(pinDHT11);
 
 // FIN SECTION DECLARATION - MESURES
 
 // DEBUT SECTION DECLARATION - ECRAN LCD
 // initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+//LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+LiquidCrystal lcd(6, 5, 4, 3, 2, 1);
 
 // FIN SECTION DECLARATION - ECRAN LCD 
 
 // DEBUT SECTION DECLARATION - CONSTANTE
 // Declaration Const --> Bouton
-int buttonpin = 2;
+//int buttonpin = 2;
+int buttonpin = D8;
 
 // Declaration variables
 unsigned long tempoMesure = 0;
