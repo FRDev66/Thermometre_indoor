@@ -3,6 +3,7 @@
 #include <ESP8266WiFi.h>  
 #include <MySQL_Connection.h>
 #include <MySQL_Cursor.h>
+#include <PubSubClient.h> //Librairie pour la gestion Mqtt 
 
 // DEBUT SECTION DECLARATION - CONNEXION
 // DECLARATION CONNEXION I - WiFi
@@ -19,9 +20,20 @@ IPAddress server_addr(192,168,1,61);  // IP of the MySQL *server* here
 char user[] = "arduino";              // MySQL user login username
 char password[] = "test";        // MySQL user login password
 
-WiFiClient client;            // Use this for WiFi instead of EthernetClient
-MySQL_Connection conn((Client *)&client);
+//MQTT
+const char* mqtt_server = "192.168.1.61";//Adresse IP du Broker Mqttconst int mqttPort = 1883; //port utilisé par le Broker 
+long tps=0;
+
+// MQTT Broker  
+#define MQTT_BROKER       "192.168.1.61"
+#define MQTT_BROKER_PORT  1883
+#define MQTT_USERNAME     "frdev66"
+#define MQTT_KEY          "Lenems66!!" 
+
+WiFiClient espClient;            // Use this for WiFi instead of EthernetClient
+MySQL_Connection conn((Client *)&espClient);
 MySQL_Cursor* cursor;
+PubSubClient client(espClient);
 
 // FIN SECTION DECLARATION - CONNEXION
 
@@ -114,12 +126,17 @@ void setup() {
 
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
   //pinMode(7,OUTPUT);
+
+  setup_mqtt();
+  client.publish("esp/test", "Hello from ESP8266");
+
 }
 
 void loop() {
-  
+  reconnect();
+  client.loop(); 
   // Prise de Mesure - TOUTES LES 10 secondes
-  if((millis() - tempoMesure) >= 30000){
+  if((millis() - tempoMesure) >= 900000){
     // start working...
     Serial.println("=================================");
     Serial.println("Sample DHT11...");
@@ -173,6 +190,8 @@ void loop() {
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
     */
+    mqtt_publish("esp/temperature",temperature);
+    mqtt_publish("esp/humidite",humidity);
 
     if (conn.connected()) {
      //cursor->execute(INSERT_SQL);
@@ -209,6 +228,36 @@ void insertHumidity(int humidity) {
   cursor->execute(query_hum); // Exécution de la Requête SQL
   Serial.println("Insertion OK");
   //delete cursor;
+}
+
+void setup_mqtt() {
+  client.setServer(MQTT_BROKER, MQTT_BROKER_PORT);
+  reconnect();
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    Serial.println("Connection au serveur MQTT ...");
+    if (client.connect("ESPClient", MQTT_USERNAME, MQTT_KEY)) {
+      Serial.println("MQTT connecté");
+    }
+    else {
+      Serial.print("echec, code erreur= ");
+      Serial.println(client.state());
+      Serial.println("nouvel essai dans 2s");
+    delay(2000);
+    }
+  }
+}
+
+//Fonction pour publier un float sur un topic
+void mqtt_publish(String topic, float t) {
+  char top[topic.length()+1];
+  topic.toCharArray(top,topic.length()+1);
+  char t_char[50];
+  String t_str = String(t);
+  t_str.toCharArray(t_char, t_str.length() + 1);
+  client.publish(top,t_char);
 }
 
 
