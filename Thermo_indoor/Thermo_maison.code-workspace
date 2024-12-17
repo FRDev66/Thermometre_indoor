@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Code_Wireless",
+			"path": "../../code_wireless/Code_Wireless"
+		},
+		{
+			"name": "Thermo_indoor",
+			"path": "."
+		}
+	],
+	"settings": {}
+}

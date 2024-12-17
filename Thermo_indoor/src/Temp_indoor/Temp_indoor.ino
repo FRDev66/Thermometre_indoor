@@ -1,8 +1,8 @@
 #include <SimpleDHT.h>
-#include <LiquidCrystal.h>
-#include <ESP8266WiFi.h>  
-#include <MySQL_Connection.h>
-#include <MySQL_Cursor.h>
+//#include <LiquidCrystal.h>
+#include <ESP8266WiFi.h> 
+//#include <SPI.h>
+
 
 // DEBUT SECTION DECLARATION - CONNEXION
 // DECLARATION CONNEXION I - WiFi
@@ -13,15 +13,9 @@ byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 char ssid[] = "Livebox-1F90";    // your SSID
 char pass[] = "o3jwTuDzadcmQAtZ2r";       // your SSID Password
 
-// DECLARATION CONNEXION II - BDD
-
-IPAddress server_addr(192,168,1,61);  // IP of the MySQL *server* here
-char user[] = "arduino";              // MySQL user login username
-char password[] = "test";        // MySQL user login password
 
 WiFiClient client;            // Use this for WiFi instead of EthernetClient
-MySQL_Connection conn((Client *)&client);
-MySQL_Cursor* cursor;
+
 
 // FIN SECTION DECLARATION - CONNEXION
 
@@ -37,13 +31,13 @@ SimpleDHT11 dht11(pinDHT11);
 
 // DEBUT SECTION DECLARATION - ECRAN LCD
 // initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+//LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
 // FIN SECTION DECLARATION - ECRAN LCD 
 
 // DEBUT SECTION DECLARATION - CONSTANTE
 // Declaration Const --> Bouton
-int buttonpin = 2;
+//nt buttonpin = 2;
 
 // Declaration variables
 unsigned long tempoMesure = 0;
@@ -52,7 +46,7 @@ unsigned long tempoMesure = 0;
 
 // EXEMPLE REQUETE SQL
 // Sample query
-char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
+//char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
 
 
 void setup() {
@@ -76,41 +70,39 @@ void setup() {
 
   // End WiFi section
 
-  Serial.println("Connecting to");
-  Serial.println(server_addr);
-  if (conn.connect(server_addr, 3306, user, password)) {
-    delay(1000);
-    //Serial.print(".");
-  }
-  else
-    Serial.println("Connection failed.");
-  //conn.close();
 
-  // create MySQL cursor object
-  cursor = new MySQL_Cursor(&conn);
+
+
 
   // FIN SECTION SETUP - CONNEXION
 
   // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
+
+  //lcd.begin(16, 2);
+  
   // Print a message to the LCD.
   //lcd.print("Hello, World!");
   //lcd.noDisplay();
 
   // initialisation bouton = input
-  pinMode(buttonpin, INPUT_PULLUP); 
+  //pinMode(buttonpin, INPUT_PULLUP); 
 
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
-  pinMode(6,OUTPUT);
+  //pinMode(6,OUTPUT);
 }
 
+//void loop() {}
+
+
 void loop() {
+  
   
   // Prise de Mesure - TOUTES LES 10 secondes
   if((millis() - tempoMesure) >= 10000){
     // start working...
     Serial.println("=================================");
     Serial.println("Sample DHT11...");
+    
     
     // read without samples.
     byte temperature = 0;
@@ -126,10 +118,10 @@ void loop() {
     Serial.print("Sample OK: ");
     Serial.print((int)temperature); Serial.print(" *C, "); 
     Serial.print((int)humidity); Serial.println(" H");
-  
+    
 
     //Serial.println(digitalRead(buttonpin));
-    
+    /*
     if (digitalRead(buttonpin) == LOW)
     {
       Serial.println(digitalRead(buttonpin)); // Affichage du Statut Bouton sur le Serial
@@ -154,10 +146,7 @@ void loop() {
       lcd.noDisplay(); // Desactivation Display LCD
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
-
-    if (conn.connected())
-      cursor->execute(INSERT_SQL);
-  
+    */
 
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
@@ -165,5 +154,6 @@ void loop() {
   }
   
 }
+
 
 
