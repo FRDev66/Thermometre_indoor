@@ -1,12 +1,9 @@
-#include <Arduino.h>
 #include <SimpleDHT.h>
 //#include <LiquidCrystal.h>
 #include <ESP8266WiFi.h> 
-#include <SPI.h>
+//#include <SPI.h>
 #include <PubSubClient.h> //Librairie pour la gestion Mqtt
-#include <Wire.h>
 #include <ArduinoOTA.h>
-#include <RemoteDebug.h>
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -51,8 +48,6 @@ SimpleDHT11 dht11(pinDHT11);
 
 // Declaration variables
 unsigned long tempoMesure = 0;
-
-RemoteDebug Debug;
 
 unsigned long previousMillis;
 
@@ -107,14 +102,8 @@ void setup() {
 
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
   //pinMode(6,OUTPUT);
-  // init remote debug
-  Debug.begin("ESP8266"); 
 
   initOTA();
-
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
 
 }
 
@@ -123,7 +112,6 @@ void setup() {
 void loop() {
   
   ArduinoOTA.handle();
-  Debug.handle();
   
   // Prise de Mesure - TOUTES LES 10 secondes
   if((millis() - tempoMesure) >= 10000){
@@ -147,11 +135,6 @@ void loop() {
     Serial.print((int)temperature); Serial.print(" *C, "); 
     Serial.print((int)humidity); Serial.println(" H");
     
-    // Affichage des Mesures via PUTTY - TELNET
-    Debug.print("Sample OK: ");
-    Debug.print((int)temperature); Serial.print(" *C, "); 
-    Debug.print((int)humidity); Serial.println(" H");
-
     mqtt_publish("esp/temperatureIn1",temperature);
     //client.publish("esp2/temperatureExt",temperatureext);
     mqtt_publish("esp/humiditeIn1",humidity);
