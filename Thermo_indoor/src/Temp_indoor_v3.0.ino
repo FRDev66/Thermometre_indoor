@@ -125,7 +125,7 @@ void setup() {
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-
+  client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
 }
 
@@ -169,6 +169,7 @@ void loop() {
 
     mqtt_publish("esp/temperatureIn1",temperature);
     mqtt_publish("esp/humiditeIn1",humidity);
+    client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
     //Serial.println(digitalRead(buttonpin));
     /*
