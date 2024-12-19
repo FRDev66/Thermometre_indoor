@@ -1,3 +1,13 @@
+// #########################################
+// Version = 3.0.0
+// Date = 17/12/2024
+// Auteur = FRDev66
+// #########################################
+// [v3.0.1] - 18/2/2024 - FRDev66 : 
+//    + Finalisation Code
+// 
+// #########################################
+
 #include <Arduino.h>
 #include <SimpleDHT.h>
 //#include <LiquidCrystal.h>
@@ -116,6 +126,7 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
+
 }
 
 
@@ -135,8 +146,8 @@ void loop() {
     
     
     // read without samples.
-    byte temperature = 20;
-    byte humidity = 66;
+    byte temperature = 0;
+    byte humidity = 0;
     int err = SimpleDHTErrSuccess;
     if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
       Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
@@ -157,7 +168,6 @@ void loop() {
     Debug.print((int)humidity); Serial.println(" H");
 
     mqtt_publish("esp/temperatureIn1",temperature);
-    //client.publish("esp2/temperatureExt",temperatureext);
     mqtt_publish("esp/humiditeIn1",humidity);
 
     //Serial.println(digitalRead(buttonpin));
@@ -187,7 +197,7 @@ void loop() {
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
     */
-
+    Debug.print(WiFi.localIP());
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
