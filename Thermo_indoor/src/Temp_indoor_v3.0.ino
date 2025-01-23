@@ -190,7 +190,9 @@ void loop() {
       return;
     }
 
+    // Transmission des Mesures vers ALEXA - ECHO BOT
     temperatureindoor = temperature;
+    humiditeindoor = humidity;
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
