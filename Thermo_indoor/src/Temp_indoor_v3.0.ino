@@ -1,11 +1,12 @@
 // #########################################
 // Version = 3.0.0
-// Date = 17/12/2024
+// Date = 19/01/2025
 // Auteur = FRDev66
 // #########################################
 // [v3.0.1] - 18/2/2024 - FRDev66 : 
 //    + Finalisation Code
-// 
+// [v3.1.0] - 19/01/2025 - FRDev66 : 
+//    + Intégration Solution SKILL ALEXA + Connexion à Cloud IoT Arduino --> ThermoIndoor
 // #########################################
 
 #include <Arduino.h>
@@ -17,6 +18,8 @@
 #include <Wire.h>
 #include <ArduinoOTA.h>
 #include <RemoteDebug.h>
+#include <ArduinoIoTCloud.h>
+#include <Arduino_ConnectionHandler.h>
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -25,8 +28,10 @@
 byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 // WiFi paramètre
-char ssid[] = "Livebox-1F90";    // your SSID
-char pass[] = "o3jwTuDzadcmQAtZ2r";       // your SSID Password
+const char DEVICE_LOGIN_NAME[]  = "d163b32f-4666-4e31-a62d-0c892e5ddfdd";
+const char ssid[] = "Livebox-1F90";    // your SSID
+const char pass[] = "o3jwTuDzadcmQAtZ2r";       // your SSID Password
+const char DEVICE_KEY[] = "cJwWMBwNy#Xn4hSzg?2MpE8Be";    // Secret device password
 
 // MQTT Broker  
 #define MQTT_BROKER       "192.168.1.61"
@@ -62,7 +67,7 @@ SimpleDHT11 dht11(pinDHT11);
 // Declaration variables
 unsigned long tempoMesure = 0;
 
-RemoteDebug Debug;
+RemoteDebug Remote;
 
 unsigned long previousMillis;
 
@@ -72,6 +77,18 @@ unsigned long previousMillis;
 // Sample query
 //char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
 
+// 
+CloudTemperatureSensor temperatureindoor;
+CloudRelativeHumidity humiditeindoor;
+
+void initProperties(){
+  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
+  ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
+  ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
+  ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
+}
+
+WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
 
 void setup() {
   Serial.begin(115200);
@@ -118,7 +135,7 @@ void setup() {
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
   //pinMode(6,OUTPUT);
   // init remote debug
-  Debug.begin("ESP8266"); 
+  Remote.begin("ESP8266"); 
 
   initOTA();
 
@@ -127,22 +144,38 @@ void setup() {
   Serial.println(WiFi.localIP());
   client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
+  // Defined in thingProperties.h
+  initProperties();
+
+  // Connect to Arduino IoT Cloud
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  
+  /*
+     The following function allows you to obtain more information
+     related to the state of network and IoT Cloud connection and errors
+     the higher number the more granular information you’ll get.
+     The default is 0 (only errors).
+     Maximum is 4
+ */
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
+
 }
 
 
 
 void loop() {
-  
+  ArduinoCloud.update();
   ArduinoOTA.handle();
-  Debug.handle();
+  Remote.handle();
   
   // Prise de Mesure - TOUTES LES 10 secondes
   if((millis() - tempoMesure) >= 10000){
     // start working...
     Serial.println("=================================");
     Serial.println("Sample DHT11...");
-    Debug.println("=================================");
-    Debug.println("Sample DHT11...");
+    Remote.println("=================================");
+    Remote.println("Sample DHT11...");
     
     
     // read without samples.
@@ -152,10 +185,14 @@ void loop() {
     if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
       Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
       Serial.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
-      Debug.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
-      Debug.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
+      Remote.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
+      Remote.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
       return;
     }
+
+    // Transmission des Mesures vers ALEXA - ECHO BOT
+    temperatureindoor = temperature;
+    humiditeindoor = humidity;
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
@@ -163,9 +200,9 @@ void loop() {
     Serial.print((int)humidity); Serial.println(" H");
     
     // Affichage des Mesures via PUTTY - TELNET
-    Debug.print("Sample OK: ");
-    Debug.print((int)temperature); Serial.print(" *C, "); 
-    Debug.print((int)humidity); Serial.println(" H");
+    Remote.print("Sample OK: ");
+    Remote.print((int)temperature); Serial.print(" *C, "); 
+    Remote.print((int)humidity); Serial.println(" H");
 
     mqtt_publish("esp/temperatureIn1",temperature);
     mqtt_publish("esp/humiditeIn1",humidity);
@@ -198,7 +235,7 @@ void loop() {
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
     */
-    Debug.print(WiFi.localIP());
+    Remote.print(WiFi.localIP());
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
@@ -290,6 +327,4 @@ void initOTA() {
   });
   ArduinoOTA.begin();
 }
-
-
 
