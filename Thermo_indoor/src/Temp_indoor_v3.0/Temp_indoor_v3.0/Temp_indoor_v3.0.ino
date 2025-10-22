@@ -7,6 +7,9 @@
 //    + Finalisation Code
 // [v3.1.0] - 19/01/2025 - FRDev66 : 
 //    + Intégration Solution SKILL ALEXA + Connexion à Cloud IoT Arduino --> ThermoIndoor
+// [v3.1.0-rc1] - 21/10/2025 - FRDev66 : 
+//    + Intégration fonction de suivi des Lancements de Mesures --> permettre la vérification de la bonne transmission des Mesures MQTT
+//    + Intégration d'un WatchDog
 // #########################################
 
 #include <Arduino.h>
@@ -16,10 +19,11 @@
 #include <SPI.h>
 #include <PubSubClient.h> //Librairie pour la gestion Mqtt
 #include <Wire.h>
-#include <ArduinoOTA.h>
-#include <RemoteDebug.h>
-#include <ArduinoIoTCloud.h>
-#include <Arduino_ConnectionHandler.h>
+#include <ArduinoOTA.h> // Librairie pour la fonction de dépôt code via Wi-Fi (OTA)
+#include <RemoteDebug.h> // Librairie pour la fonction de Remote pour le dépôt via Wi-Fi (OTA)
+//#include <ArduinoIoTCloud.h>
+//#include <Arduino_ConnectionHandler.h>
+#include <Adafruit_SleepyDog.h> // Librairie pour la fonction WatchDog
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -71,6 +75,8 @@ RemoteDebug Remote;
 
 unsigned long previousMillis;
 
+int indexMesures = 0;
+
 // FIN SECTION DECLARATION - CONSTANTE
 
 // EXEMPLE REQUETE SQL
@@ -78,17 +84,17 @@ unsigned long previousMillis;
 //char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
 
 // 
-CloudTemperatureSensor temperatureindoor;
-CloudRelativeHumidity humiditeindoor;
+//CloudTemperatureSensor temperatureindoor;
+//CloudRelativeHumidity humiditeindoor;
 
-void initProperties(){
-  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
-  ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
-  ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
-  ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
-}
+// void initProperties(){
+//   ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
+//   ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
+//   ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
+//   ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
+// }
 
-WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
+// WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
 
 void setup() {
   Serial.begin(115200);
@@ -120,6 +126,8 @@ void setup() {
   // END SECTION - MQTT
 
   
+  // Setup watchdog
+  int countdownMS = Watchdog.enable(4000);  // Pour un time-out à 4 secondes
 
   // set up the LCD's number of columns and rows:
 
@@ -145,10 +153,10 @@ void setup() {
   client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
   // Defined in thingProperties.h
-  initProperties();
+  //initProperties();
 
   // Connect to Arduino IoT Cloud
-  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  //ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   
   /*
      The following function allows you to obtain more information
@@ -157,15 +165,17 @@ void setup() {
      The default is 0 (only errors).
      Maximum is 4
  */
-  setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();
+  //setDebugMessageLevel(2);
+  //ArduinoCloud.printDebugInfo();
+
+  
 
 }
 
 
 
 void loop() {
-  ArduinoCloud.update();
+  //ArduinoCloud.update();
   ArduinoOTA.handle();
   Remote.handle();
   
@@ -191,13 +201,15 @@ void loop() {
     }
 
     // Transmission des Mesures vers ALEXA - ECHO BOT
-    temperatureindoor = temperature;
-    humiditeindoor = humidity;
+    //temperatureindoor = temperature;
+    //humiditeindoor = humidity;
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
     Serial.print((int)temperature); Serial.print(" *C, "); 
     Serial.print((int)humidity); Serial.println(" H");
+    Serial.print("indexMesures = ");
+    Serial.print(indexMesures);
     
     // Affichage des Mesures via PUTTY - TELNET
     Remote.print("Sample OK: ");
@@ -207,6 +219,8 @@ void loop() {
     mqtt_publish("esp/temperatureIn1",temperature);
     mqtt_publish("esp/humiditeIn1",humidity);
     client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
+    mqtt_publish("esp/indexMesures",indexMesures);
+    
 
     //Serial.println(digitalRead(buttonpin));
     /*
@@ -239,6 +253,10 @@ void loop() {
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
+    indexMesures = indexMesures+1;
+
+    // Déclenchement du WatchDog
+    Watchdog.reset();
   }
   
 }
