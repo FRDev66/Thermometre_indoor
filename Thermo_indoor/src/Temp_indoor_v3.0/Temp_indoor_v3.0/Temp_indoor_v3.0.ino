@@ -21,8 +21,8 @@
 #include <Wire.h>
 #include <ArduinoOTA.h> // Librairie pour la fonction de dépôt code via Wi-Fi (OTA)
 #include <RemoteDebug.h> // Librairie pour la fonction de Remote pour le dépôt via Wi-Fi (OTA)
-//#include <ArduinoIoTCloud.h>
-//#include <Arduino_ConnectionHandler.h>
+#include <ArduinoIoTCloud.h>
+#include <Arduino_ConnectionHandler.h>
 #include <Adafruit_SleepyDog.h> // Librairie pour la fonction WatchDog
 
 
@@ -84,17 +84,17 @@ int indexMesures = 0;
 //char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
 
 // 
-//CloudTemperatureSensor temperatureindoor;
-//CloudRelativeHumidity humiditeindoor;
+CloudTemperatureSensor temperatureindoor;
+CloudRelativeHumidity humiditeindoor;
 
-// void initProperties(){
-//   ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
-//   ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
-//   ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
-//   ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
-// }
+void initProperties(){
+  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
+  ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
+  ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
+  ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
+}
 
-// WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
+WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
 
 void setup() {
   Serial.begin(115200);
@@ -153,10 +153,10 @@ void setup() {
   client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
   // Defined in thingProperties.h
-  //initProperties();
+  initProperties();
 
   // Connect to Arduino IoT Cloud
-  //ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   
   /*
      The following function allows you to obtain more information
@@ -165,8 +165,8 @@ void setup() {
      The default is 0 (only errors).
      Maximum is 4
  */
-  //setDebugMessageLevel(2);
-  //ArduinoCloud.printDebugInfo();
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
 
   
 
@@ -175,7 +175,8 @@ void setup() {
 
 
 void loop() {
-  //ArduinoCloud.update();
+  
+  ArduinoCloud.update();
   ArduinoOTA.handle();
   Remote.handle();
   
@@ -201,8 +202,8 @@ void loop() {
     }
 
     // Transmission des Mesures vers ALEXA - ECHO BOT
-    //temperatureindoor = temperature;
-    //humiditeindoor = humidity;
+    temperatureindoor = temperature;
+    humiditeindoor = humidity;
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
