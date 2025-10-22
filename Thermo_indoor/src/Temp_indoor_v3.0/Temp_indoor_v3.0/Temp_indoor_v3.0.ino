@@ -9,7 +9,7 @@
 //    + Intégration Solution SKILL ALEXA + Connexion à Cloud IoT Arduino --> ThermoIndoor
 // [v3.1.0-rc1] - 21/10/2025 - FRDev66 : 
 //    + Intégration fonction de suivi des Lancements de Mesures --> permettre la vérification de la bonne transmission des Mesures MQTT
-//
+//    + Intégration d'un WatchDog
 // #########################################
 
 #include <Arduino.h>
@@ -23,6 +23,9 @@
 #include <RemoteDebug.h> // Librairie pour la fonction de Remote pour le dépôt via Wi-Fi (OTA)
 //#include <ArduinoIoTCloud.h>
 //#include <Arduino_ConnectionHandler.h>
+ // Librairie pour la fonction WatchDog
+//#include <wdt.h>
+#include <Adafruit_SleepyDog.h>
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -125,6 +128,9 @@ void setup() {
   // END SECTION - MQTT
 
   
+  // Setup watchdog
+  int countdownMS = Watchdog.enable(4000);
+  // Pour un time-out à 4 secondes
 
   // set up the LCD's number of columns and rows:
 
@@ -164,6 +170,8 @@ void setup() {
  */
   //setDebugMessageLevel(2);
   //ArduinoCloud.printDebugInfo();
+
+  
 
 }
 
@@ -249,6 +257,8 @@ void loop() {
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
     indexMesures = indexMesures+1;
+
+    Watchdog.reset();
   }
   
 }
