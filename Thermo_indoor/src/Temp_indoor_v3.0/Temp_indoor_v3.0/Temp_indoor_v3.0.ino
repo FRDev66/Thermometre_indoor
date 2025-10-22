@@ -23,9 +23,7 @@
 #include <RemoteDebug.h> // Librairie pour la fonction de Remote pour le dépôt via Wi-Fi (OTA)
 //#include <ArduinoIoTCloud.h>
 //#include <Arduino_ConnectionHandler.h>
- // Librairie pour la fonction WatchDog
-//#include <wdt.h>
-#include <Adafruit_SleepyDog.h>
+#include <Adafruit_SleepyDog.h> // Librairie pour la fonction WatchDog
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -129,8 +127,7 @@ void setup() {
 
   
   // Setup watchdog
-  int countdownMS = Watchdog.enable(4000);
-  // Pour un time-out à 4 secondes
+  int countdownMS = Watchdog.enable(4000);  // Pour un time-out à 4 secondes
 
   // set up the LCD's number of columns and rows:
 
@@ -258,6 +255,7 @@ void loop() {
     //delay(10000);
     indexMesures = indexMesures+1;
 
+    // Déclenchement du WatchDog
     Watchdog.reset();
   }
   
