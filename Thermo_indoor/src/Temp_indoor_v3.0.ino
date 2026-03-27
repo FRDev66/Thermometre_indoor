@@ -16,10 +16,12 @@
 #include <SPI.h>
 #include <PubSubClient.h> //Librairie pour la gestion Mqtt
 #include <Wire.h>
-#include <ArduinoOTA.h>
-#include <RemoteDebug.h>
-#include <ArduinoIoTCloud.h>
-#include <Arduino_ConnectionHandler.h>
+//#include <ArduinoOTA.h>
+//#include <RemoteDebug.h>
+//#include <ArduinoIoTCloud.h>
+//#include <Arduino_ConnectionHandler.h>
+#include <HomeAssistantMQTT.h>
+#include <ArduinoHA.h>
 
 
 // DEBUT SECTION DECLARATION - CONNEXION
@@ -34,13 +36,13 @@ const char pass[] = "o3jwTuDzadcmQAtZ2r";       // your SSID Password
 const char DEVICE_KEY[] = "cJwWMBwNy#Xn4hSzg?2MpE8Be";    // Secret device password
 
 // MQTT Broker  
-#define MQTT_BROKER       "192.168.1.61"
-#define MQTT_BROKER_PORT  1883
+//#define MQTT_BROKER       "192.168.1.41"
+//#define MQTT_BROKER_PORT  1883
 #define MQTT_USERNAME     "frdev66"
 #define MQTT_KEY          "Lenems66!!"
 
 WiFiClient espClient;            // Use this for WiFi instead of EthernetClient
-PubSubClient client(espClient);
+//PubSubClient client(espClient);
 
 // FIN SECTION DECLARATION - CONNEXION
 
@@ -67,7 +69,7 @@ SimpleDHT11 dht11(pinDHT11);
 // Declaration variables
 unsigned long tempoMesure = 0;
 
-RemoteDebug Remote;
+//RemoteDebug Remote;
 
 unsigned long previousMillis;
 
@@ -78,17 +80,25 @@ unsigned long previousMillis;
 //char INSERT_SQL[] = "INSERT INTO station_meteo.temperature (id_mesure_temp, date_mesure, mesure) VALUES (NULL, current_timestamp(), '15.8');";
 
 // 
-CloudTemperatureSensor temperatureindoor;
-CloudRelativeHumidity humiditeindoor;
+//CloudTemperatureSensor temperatureindoor;
+//CloudRelativeHumidity humiditeindoor;
 
-void initProperties(){
+/*void initProperties(){
   ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
   ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
   ArduinoCloud.addProperty(temperatureindoor, READ, ON_CHANGE, NULL);
   ArduinoCloud.addProperty(humiditeindoor, READ, ON_CHANGE, NULL);
-}
+}*/
 
-WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
+//WiFiConnectionHandler ArduinoIoTPreferredConnection(ssid,pass); 
+WiFiClient client;
+
+
+HADevice device("esp8266_thermo_indoor2");
+HAMqtt mqtt(client, device);
+HASensor tempValue("temperature");
+HASensor humiditeValue("Humidite");
+
 
 void setup() {
   Serial.begin(115200);
@@ -97,6 +107,9 @@ void setup() {
   Serial.println();
 
   WiFi.begin(ssid,pass);
+
+  mqtt.begin("192.168.1.41", "mqtt", "Electronlibre66!!");
+
 
   Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED)
@@ -114,8 +127,8 @@ void setup() {
   // FIN SECTION SETUP - CONNEXION
 
   // DEBUT SECTION - MQTT
-  setup_mqtt();
-  client.publish("esp/init", "Hello from ESP8266_IN1");
+  //setup_mqtt();
+  //client.publish("esp/init", "Hello from Thermo_Indoor ESP8266_IN1 - ");
 
   // END SECTION - MQTT
 
@@ -135,20 +148,20 @@ void setup() {
   // initialisation alimentation retro-eclairage LCD sur la PIN 6
   //pinMode(6,OUTPUT);
   // init remote debug
-  Remote.begin("ESP8266"); 
+  //Remote.begin("ESP8266"); 
 
-  initOTA();
+  //initOTA();
 
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
+  //client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
 
   // Defined in thingProperties.h
-  initProperties();
+  //initProperties();
 
   // Connect to Arduino IoT Cloud
-  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  //ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   
   /*
      The following function allows you to obtain more information
@@ -157,25 +170,33 @@ void setup() {
      The default is 0 (only errors).
      Maximum is 4
  */
-  setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();
+  //setDebugMessageLevel(2);
+  //ArduinoCloud.printDebugInfo();
+
+  device.setName("Thermo_Interieur");
+  tempValue.setName("temp");
+  humiditeValue.setName("humidity");
+
+  mqtt.loop();
+
+
 
 }
 
 
 
 void loop() {
-  ArduinoCloud.update();
-  ArduinoOTA.handle();
-  Remote.handle();
+  //ArduinoCloud.update();
+  //ArduinoOTA.handle();
+  //Remote.handle();
   
   // Prise de Mesure - TOUTES LES 10 secondes
   if((millis() - tempoMesure) >= 10000){
     // start working...
     Serial.println("=================================");
     Serial.println("Sample DHT11...");
-    Remote.println("=================================");
-    Remote.println("Sample DHT11...");
+    //Remote.println("=================================");
+    //Remote.println("Sample DHT11...");
     
     
     // read without samples.
@@ -185,14 +206,18 @@ void loop() {
     if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
       Serial.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
       Serial.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
-      Remote.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
-      Remote.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
+      //Remote.print("Read DHT11 failed, err="); Serial.print(SimpleDHTErrCode(err));
+      //Remote.print(","); Serial.println(SimpleDHTErrDuration(err)); delay(1000);
       return;
     }
 
+    float t = temperature;   // °C
+    float h = humidity;      // %
+
+
     // Transmission des Mesures vers ALEXA - ECHO BOT
-    temperatureindoor = temperature;
-    humiditeindoor = humidity;
+    //temperatureindoor = temperature;
+    //humiditeindoor = humidity;
     
     // Affichage des Données sur le Serial
     Serial.print("Sample OK: ");
@@ -200,13 +225,18 @@ void loop() {
     Serial.print((int)humidity); Serial.println(" H");
     
     // Affichage des Mesures via PUTTY - TELNET
-    Remote.print("Sample OK: ");
-    Remote.print((int)temperature); Serial.print(" *C, "); 
-    Remote.print((int)humidity); Serial.println(" H");
+    //Remote.print("Sample OK: ");
+    //Remote.print((int)temperature); Serial.print(" *C, "); 
+    //Remote.print((int)humidity); Serial.println(" H");
 
-    mqtt_publish("esp/temperatureIn1",temperature);
-    mqtt_publish("esp/humiditeIn1",humidity);
-    client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
+    //mqtt_publish("esp/temperatureIn1",temperature);
+    //mqtt_publish("esp/humiditeIn1",humidity);
+    //client.publish("esp/adresseIP",WiFi.localIP().toString().c_str());
+    
+    tempValue.setValue(String(t).c_str());
+    humiditeValue.setValue(String(h).c_str());
+    mqtt.loop();
+
 
     //Serial.println(digitalRead(buttonpin));
     /*
@@ -235,7 +265,7 @@ void loop() {
       digitalWrite(6, LOW); // Eteindre Retro-Eclairage LCD
     }
     */
-    Remote.print(WiFi.localIP());
+    //Remote.print(WiFi.localIP());
     tempoMesure = millis();
     // DHT11 sampling rate is 1HZ.
     //delay(10000);
@@ -243,12 +273,12 @@ void loop() {
   
 }
 
-void setup_mqtt() {
+/*void setup_mqtt() {
   client.setServer(MQTT_BROKER, MQTT_BROKER_PORT);
   reconnect();
-}
+}*/
 
-void reconnect() {
+/*void reconnect() {
   while (!client.connected()) {
     Serial.println("Connection au serveur MQTT ...");
     if (client.connect("ESPClientIN1", MQTT_USERNAME, MQTT_KEY)) {
@@ -262,10 +292,10 @@ void reconnect() {
     }
   }
   //client.subscribe("esp2/temperatureExt"); //souscription au topic du esp2
-}
+}*/
 
 //Fonction pour publier un float sur un topic
-void mqtt_publish(String topic, float t) {
+/*void mqtt_publish(String topic, float t) {
   char top[topic.length()+1];
   topic.toCharArray(top,topic.length()+1);
   char t_char[50];
@@ -278,9 +308,9 @@ void mqtt_publish(String topic, float t) {
   Serial.print("valeur topic MQTT = ");
   Serial.println(t);
   Serial.println(t_char);
-}
+}*/
 
-void initOTA() {
+/*void initOTA() {
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
 
@@ -326,5 +356,5 @@ void initOTA() {
     }
   });
   ArduinoOTA.begin();
-}
+}*/
 
